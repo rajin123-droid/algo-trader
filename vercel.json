@@ -1,0 +1,4 @@
+{
+  "buildCommand": "pnpm --filter @workspace/web-dashboard build",
+  "outputDirectory": "apps/web-dashboard/dist"
+}
