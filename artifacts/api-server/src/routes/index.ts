@@ -1,0 +1,53 @@
+import { Router, type IRouter } from "express";
+import healthRouter from "./health";
+import dashboardRouter from "./dashboard";
+import tradesRouter from "./trades";
+import paramsRouter from "./params";
+import performanceRouter from "./performance";
+import authRouter from "./auth";
+import positionsRouter from "./positions";
+import keysRouter from "./keys";
+import botRouter from "./bot";
+import candlesRouter from "./candles";
+import backtestRouter from "./backtest";
+import autoTradingRouter from "./auto-trading";
+import aiStrategyRouter from "./ai-strategy";
+import marketplaceRouter from "./marketplace";
+import sorRouter from "./sor";
+import metricsRouter from "./metrics-route";
+import adminRouter from "./admin";
+import complianceRouter from "./compliance-route";
+import ledgerRouter from "./ledger";
+import auditRouter from "./audit-route";
+import portfolioRouter from "./portfolio";
+import exchangeRouter  from "./exchange";
+import ordersRouter    from "./orders";
+
+const router: IRouter = Router();
+
+router.use(healthRouter);
+router.use(dashboardRouter);
+router.use(tradesRouter);
+router.use(paramsRouter);
+router.use(performanceRouter);
+router.use(authRouter);
+router.use(positionsRouter);
+router.use(keysRouter);
+router.use(botRouter);
+router.use(candlesRouter);
+router.use(backtestRouter);
+router.use(autoTradingRouter);
+router.use(aiStrategyRouter);
+router.use(marketplaceRouter);
+router.use(sorRouter);
+router.use(adminRouter);
+router.use(complianceRouter);
+router.use(ledgerRouter);
+router.use(auditRouter);
+router.use(portfolioRouter);
+router.use(exchangeRouter);
+router.use(ordersRouter);
+
+export default router;
+
+export { metricsRouter };

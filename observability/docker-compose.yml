@@ -1,0 +1,73 @@
+# Observability stack for local development
+#
+# Starts:
+#   - Prometheus   http://localhost:9090
+#   - Grafana      http://localhost:3001  (admin / admin)
+#   - Jaeger       http://localhost:16686 (trace explorer)
+#
+# Usage:
+#   docker-compose -f observability/docker-compose.yml up -d
+#
+# Then point the API server at Jaeger by setting:
+#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+#   (this is already the default)
+#
+# Grafana auto-provisions:
+#   - Prometheus datasource
+#   - Trading dashboard (from dashboards/trading-dashboard.json)
+
+version: "3.9"
+
+services:
+
+  # ── Prometheus ──────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: algo-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # ── Grafana ─────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: algo-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_HTTP_PORT: "3001"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3001"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ── Jaeger (all-in-one OTLP receiver) ──────────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: algo-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP  ← what the API server uses
+      - "16686:16686"  # Jaeger UI
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

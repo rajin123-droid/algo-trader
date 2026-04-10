@@ -1,0 +1,38 @@
+{
+  "name": "@workspace/api-gateway",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "node build.mjs",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@workspace/analytics-service": "workspace:*",
+    "@workspace/auth-service": "workspace:*",
+    "@workspace/config": "workspace:*",
+    "@workspace/db": "workspace:*",
+    "@workspace/errors": "workspace:*",
+    "@workspace/event-bus": "workspace:*",
+    "@workspace/logger": "workspace:*",
+    "@workspace/market-data-service": "workspace:*",
+    "@workspace/portfolio-service": "workspace:*",
+    "@workspace/trading-engine": "workspace:*",
+    "@workspace/types": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pino-http": "^10.5.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "^5.8.2"
+  }
+}

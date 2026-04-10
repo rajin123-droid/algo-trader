@@ -1,0 +1,40 @@
+# Prometheus scrape configuration — Algo-Trading API
+#
+# Usage (standalone):
+#   prometheus --config.file=observability/prometheus.yml
+#
+# Usage (docker-compose):
+#   see observability/docker-compose.yml
+
+global:
+  scrape_interval:     15s   # How frequently to scrape targets
+  evaluation_interval: 15s   # How frequently to evaluate rules
+  scrape_timeout:      10s
+
+  # Attach labels to all timeseries for environment identification
+  external_labels:
+    environment: development
+    service:     algo-trading-api
+
+# Alerting rules — loaded from the alerts/ directory
+rule_files:
+  - "alerts/*.yaml"
+
+# Alertmanager configuration (optional — comment out if not running Alertmanager)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # ── Algo-Trading API ────────────────────────────────────────────────────────
+  - job_name: "algo-trading-api"
+    static_configs:
+      - targets: ["host.docker.internal:8080"]   # host.docker.internal = host from inside Docker
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # ── Prometheus self-monitoring ──────────────────────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

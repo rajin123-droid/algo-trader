@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/market-data-service",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@workspace/config": "workspace:*",
+    "@workspace/errors": "workspace:*",
+    "@workspace/event-bus": "workspace:*",
+    "@workspace/logger": "workspace:*",
+    "@workspace/types": "workspace:*",
+    "express": "^4.21.2",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "catalog:",
+    "@types/ws": "^8.5.14",
+    "tsx": "catalog:",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,251 @@
+# Prometheus Alerting Rules — Algo-Trading API
+#
+# Deploy via prometheus.yml:
+#   rule_files:
+#     - /etc/prometheus/alerts/*.yaml
+#
+# Severity levels:
+#   critical  — pages on-call immediately (PagerDuty / OpsGenie)
+#   warning   — Slack notification, investigate within the hour
+#   info      — Logged to Grafana annotations
+#
+# ALL financial-safety rules are CRITICAL. No exceptions.
+
+groups:
+
+  # ─── Golden Signals ────────────────────────────────────────────────────────
+  - name: golden_signals
+    rules:
+
+      - alert: HighHTTPLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_ms_bucket[5m])) by (le, route)
+          ) > 500
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High HTTP latency on {{ $labels.route }}"
+          description: |
+            p95 latency on route {{ $labels.route }} has been above 500ms for 2 minutes.
+            Current value: {{ $value | humanizeDuration }}ms.
+            Check slow queries, Redis latency, and external API response times.
+
+      - alert: VeryHighHTTPLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_ms_bucket[5m])) by (le)
+          ) > 2000
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "CRITICAL: API p95 latency above 2s"
+          description: |
+            Overall API p95 latency is {{ $value | humanizeDuration }}ms.
+            This is critically high and likely impacting all users.
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_errors_total{status=~"5.."}[5m]))
+          / sum(rate(http_requests_total[5m])) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "HTTP 5xx error rate above 1%"
+          description: |
+            5xx error rate is {{ $value | humanizePercentage }} (threshold: 1%).
+            Inspect application logs for root cause.
+
+      - alert: CriticalErrorRate
+        expr: |
+          sum(rate(http_errors_total{status=~"5.."}[5m]))
+          / sum(rate(http_requests_total[5m])) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "CRITICAL: HTTP 5xx error rate above 5%"
+          description: |
+            5xx error rate is {{ $value | humanizePercentage }}.
+            Immediate action required — most requests are failing.
+
+      - alert: HighHeapMemory
+        expr: |
+          app_nodejs_heap_size_used_bytes / app_nodejs_heap_size_total_bytes > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Node.js heap memory above 90%"
+          description: |
+            Heap utilisation is {{ $value | humanizePercentage }}.
+            Risk of OOM crash if not addressed.
+
+  # ─── Financial Safety (CRITICAL — never page-suppress) ─────────────────────
+  - name: financial_safety
+    rules:
+
+      - alert: LedgerImbalance
+        expr: ledger_imbalance_total > 0.000001
+        for: 0m
+        labels:
+          severity: critical
+          team: finance
+          pagerduty: "true"
+        annotations:
+          summary: "CRITICAL: Double-entry ledger is UNBALANCED"
+          description: |
+            ledger_imbalance_total = {{ $value }}.
+            This means debit ≠ credit for one or more transactions.
+            This is a P0 financial integrity violation — halt trading immediately
+            and run POST /api/admin/reconcile to investigate.
+
+      - alert: ReconciliationFailing
+        expr: |
+          sum(rate(ledger_reconcile_runs_total{result="fail"}[30m])) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: finance
+          pagerduty: "true"
+        annotations:
+          summary: "CRITICAL: Ledger reconciliation failing"
+          description: |
+            One or more reconciliation runs have returned FAIL in the last 30 minutes.
+            Check audit logs and ledger entries for imbalanced transactions.
+
+  # ─── Trading Engine ─────────────────────────────────────────────────────────
+  - name: trading_engine
+    rules:
+
+      - alert: HighTradeFailureRate
+        expr: |
+          sum(rate(trading_errors_total[5m])) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "Trade execution errors above threshold"
+          description: |
+            Trading error rate is {{ $value }} errors/second.
+            Strategy failures, exchange connectivity, or risk rejections may be increasing.
+
+      - alert: TradeExecutionStalled
+        expr: |
+          sum(rate(trading_trades_total{result="EXECUTED"}[10m])) == 0
+          and sum(rate(http_requests_total{route=~".*/auto-trading.*"}[10m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "No trades executed in last 10 minutes while sessions are active"
+          description: |
+            Auto-trading is receiving requests but producing no executions.
+            Check strategy engines and market data feed connectivity.
+
+      - alert: HighSORSlippage
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(sor_slippage_bps_bucket[5m])) by (le)
+          ) > 20
+        for: 5m
+        labels:
+          severity: warning
+          team: trading
+        annotations:
+          summary: "SOR slippage above 20bps at p95"
+          description: |
+            Smart Order Router is experiencing high slippage: {{ $value }}bps at p95.
+            Check exchange order book depth and consider adjusting routing thresholds.
+
+  # ─── WebSocket Gateway ──────────────────────────────────────────────────────
+  - name: websocket_gateway
+    rules:
+
+      - alert: WSConnectionsDrop
+        expr: |
+          delta(ws_connections_active[5m]) < -100
+        for: 1m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "WebSocket connections dropped sharply"
+          description: |
+            Active WebSocket connections dropped by {{ $value }} in 5 minutes.
+            May indicate a server restart or network partition.
+
+  # ─── Compliance ─────────────────────────────────────────────────────────────
+  - name: compliance
+    rules:
+
+      - alert: HighAMLFlagRate
+        expr: |
+          sum(rate(compliance_aml_flags_total{decision="FLAG"}[5m]))
+          / sum(rate(compliance_aml_flags_total[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          team: compliance
+        annotations:
+          summary: "AML flag rate above 5%"
+          description: |
+            {{ $value | humanizePercentage }} of AML checks are being flagged.
+            Threshold: 5%. Review recent user activity for coordinated suspicious behaviour.
+
+      - alert: AMLBlockSurge
+        expr: |
+          sum(rate(compliance_aml_flags_total{decision="BLOCK"}[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: compliance
+        annotations:
+          summary: "CRITICAL: AML is blocking a high volume of transactions"
+          description: |
+            AML BLOCK rate is {{ $value }} decisions/second.
+            Possible coordinated attack or systematic data issue. Immediate review required.
+
+  # ─── Infrastructure ─────────────────────────────────────────────────────────
+  - name: infrastructure
+    rules:
+
+      - alert: SlowDBQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(db_query_duration_ms_bucket[5m])) by (le, table)
+          ) > 500
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Slow DB queries on table {{ $labels.table }}"
+          description: |
+            p95 query duration on {{ $labels.table }} is {{ $value }}ms.
+            Check missing indexes, table bloat, or connection pool exhaustion.
+
+      - alert: RedisCommandLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(redis_command_duration_ms_bucket[5m])) by (le, command)
+          ) > 50
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Redis {{ $labels.command }} latency elevated"
+          description: |
+            p95 latency for Redis {{ $labels.command }} is {{ $value }}ms (threshold: 50ms).
+            Check Redis memory pressure, network latency, and key expiry.

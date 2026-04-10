@@ -1,0 +1,11 @@
+{
+  "name": "@workspace/web-dashboard",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Main trading dashboard — see artifacts/trading-dashboard for the full source. This is a registry entry for the new apps/ structure.",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @workspace/trading-dashboard run dev",
+    "build": "pnpm --filter @workspace/trading-dashboard run build"
+  }
+}

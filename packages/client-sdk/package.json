@@ -1,0 +1,16 @@
+{
+  "name": "@workspace/client-sdk",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Frontend client SDK — re-exports api-client-react hooks and api-zod schemas.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./hooks": "./src/hooks.ts",
+    "./schemas": "./src/schemas.ts"
+  },
+  "dependencies": {
+    "@workspace/api-client-react": "workspace:*",
+    "@workspace/api-zod": "workspace:*"
+  }
+}

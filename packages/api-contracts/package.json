@@ -1,0 +1,13 @@
+{
+  "name": "@workspace/api-contracts",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Re-exports @workspace/api-spec for the new packages/ path.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@workspace/api-zod": "workspace:*"
+  }
+}

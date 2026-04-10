@@ -1,0 +1,13 @@
+{
+  "name": "@workspace/packages-db",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Re-exports @workspace/db for the new packages/ path. The canonical source remains lib/db.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*"
+  }
+}

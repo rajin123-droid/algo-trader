@@ -1,0 +1,358 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Trading Dashboard API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: dashboard
+    description: Dashboard summary
+  - name: trades
+    description: Trade operations
+  - name: params
+    description: AI parameter management
+  - name: performance
+    description: Performance analytics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary
+      description: Returns current balance, PnL, win rate, and recent activity
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /trades:
+    get:
+      operationId: listTrades
+      tags: [trades]
+      summary: List all trades
+      description: Returns all trade records
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Trade list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trade"
+  /trades/simulate:
+    post:
+      operationId: simulateTrade
+      tags: [trades]
+      summary: Simulate a trade
+      description: Triggers the engine to process a simulated trade
+      responses:
+        "201":
+          description: Trade created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trade"
+  /trades/stats:
+    get:
+      operationId: getTradeStats
+      tags: [trades]
+      summary: Get trade statistics
+      description: Returns grouped trade statistics by result type
+      responses:
+        "200":
+          description: Trade statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TradeStats"
+  /params:
+    get:
+      operationId: getParams
+      tags: [params]
+      summary: Get AI parameters
+      description: Returns current AI tuning parameters
+      responses:
+        "200":
+          description: Current parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiParams"
+    patch:
+      operationId: updateParams
+      tags: [params]
+      summary: Update AI parameters
+      description: Manually adjust AI parameters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAiParams"
+      responses:
+        "200":
+          description: Updated parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiParams"
+  /performance:
+    get:
+      operationId: getPerformance
+      tags: [performance]
+      summary: Get performance metrics
+      description: Returns detailed performance analysis
+      responses:
+        "200":
+          description: Performance data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceMetrics"
+  /performance/equity-curve:
+    get:
+      operationId: getEquityCurve
+      tags: [performance]
+      summary: Get equity curve data
+      description: Returns balance over time for charting
+      responses:
+        "200":
+          description: Equity curve points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EquityPoint"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    DashboardSummary:
+      type: object
+      properties:
+        balance:
+          type: number
+        totalPnl:
+          type: number
+        winRate:
+          type: number
+        totalTrades:
+          type: integer
+        winCount:
+          type: integer
+        lossCount:
+          type: integer
+        avgPnl:
+          type: number
+        bestTrade:
+          type: number
+        worstTrade:
+          type: number
+        currentStreak:
+          type: integer
+        streakType:
+          type: string
+          enum: [WIN, LOSS, NONE]
+        lastSignalDirection:
+          type: ["string", "null"]
+        lastSignalTime:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - balance
+        - totalPnl
+        - winRate
+        - totalTrades
+        - winCount
+        - lossCount
+        - avgPnl
+        - bestTrade
+        - worstTrade
+        - currentStreak
+        - streakType
+        - lastSignalDirection
+        - lastSignalTime
+    Trade:
+      type: object
+      properties:
+        id:
+          type: integer
+        entry:
+          type: number
+        exit:
+          type: number
+        stopLoss:
+          type: number
+        takeProfit:
+          type: number
+        size:
+          type: number
+        pnl:
+          type: number
+        result:
+          type: string
+          enum: [WIN, LOSS]
+        direction:
+          type: string
+          enum: [LONG, SHORT]
+        openTime:
+          type: string
+          format: date-time
+        closeTime:
+          type: string
+          format: date-time
+        score:
+          type: number
+      required:
+        - id
+        - entry
+        - exit
+        - stopLoss
+        - takeProfit
+        - size
+        - pnl
+        - result
+        - direction
+        - openTime
+        - closeTime
+        - score
+    TradeStats:
+      type: object
+      properties:
+        totalTrades:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        winRate:
+          type: number
+        avgWin:
+          type: number
+        avgLoss:
+          type: number
+        profitFactor:
+          type: number
+        maxDrawdown:
+          type: number
+        longCount:
+          type: integer
+        shortCount:
+          type: integer
+        longWinRate:
+          type: number
+        shortWinRate:
+          type: number
+      required:
+        - totalTrades
+        - wins
+        - losses
+        - winRate
+        - avgWin
+        - avgLoss
+        - profitFactor
+        - maxDrawdown
+        - longCount
+        - shortCount
+        - longWinRate
+        - shortWinRate
+    AiParams:
+      type: object
+      properties:
+        minScore:
+          type: number
+        riskPerTrade:
+          type: number
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - minScore
+        - riskPerTrade
+        - updatedAt
+    UpdateAiParams:
+      type: object
+      properties:
+        minScore:
+          type: number
+        riskPerTrade:
+          type: number
+    PerformanceMetrics:
+      type: object
+      properties:
+        winRate:
+          type: number
+        avgPnl:
+          type: number
+        sharpeRatio:
+          type: number
+        maxDrawdown:
+          type: number
+        totalReturn:
+          type: number
+        tradesPerDay:
+          type: number
+        avgHoldTime:
+          type: number
+        currentParams:
+          $ref: "#/components/schemas/AiParams"
+      required:
+        - winRate
+        - avgPnl
+        - sharpeRatio
+        - maxDrawdown
+        - totalReturn
+        - tradesPerDay
+        - avgHoldTime
+        - currentParams
+    EquityPoint:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        balance:
+          type: number
+        pnl:
+          type: number
+      required:
+        - timestamp
+        - balance
+        - pnl
