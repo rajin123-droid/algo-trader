@@ -1,4 +1,5 @@
+
 {
-  "buildCommand": "pnpm --filter @workspace/trading-dashboard run build",
-  "outputDirectory": "dist"
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/public"
 }
